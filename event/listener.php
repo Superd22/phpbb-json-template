@@ -33,7 +33,7 @@ class listener implements EventSubscriberInterface
   static public function getSubscribedEvents()
   {
     return array(
-      'core.page_header_after' => 'json_header',
+    //  'core.page_header_after' => 'json_header',
       'core.page_footer_after' => 'json_template',
     );
   }

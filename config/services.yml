@@ -1,0 +1,20 @@
+services:
+  scfr.phpbbJsonTemplate.listener:
+    class: scfr\phpbbJsonTemplate\event\listener
+    arguments:
+      - '@template'
+      - '@user'
+      - '@dbal.conn'
+      - '@request'
+      - '@scfr.phpbbJsonTemplate.helper.api'
+    tags:
+      - { name: event.listener }
+  scfr.phpbbJsonTemplate.helper.api:
+    class: scfr\phpbbJsonTemplate\helper\api
+    arguments:
+      - '@template'
+      - '@user'
+      - '@config'
+      - '@symfony_request'
+      - '@request'
+      - '@routing.helper'

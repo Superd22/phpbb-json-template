@@ -1,5 +1,6 @@
-# phpbb-json-template
+# phpbb-json-template 
 A prototype for kable
+**require >phpbb3.2.0**
 
 ## SETUP
 - Clone in phpbb/ext/scfr/phpbbJsonTemplate/

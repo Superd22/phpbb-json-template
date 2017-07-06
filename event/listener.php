@@ -4,58 +4,124 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class listener implements EventSubscriberInterface
 {
-  /** @var \phpbb\template\template */
-  protected $template;
-  /** @var \phpbb\user */
-  protected $user;
-  /** @param \phpbb\db\driver\driver_interface */
-  protected $db;
-
-  protected $api;
-
-
-  /**
-  * Constructor
-  *
-  * @param \phpbb\template\template             $template          Template object
-  * @param \phpbb\user   $user             User object
-  * @param \phpbb\db\driver\driver_interface   $db             Database object
-  * @access public
-  */
-  public function __construct(\phpbb\template\template $template, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\request\request $request, \scfr\phpbbJsonTemplate\helper\api $api) {
-    $this->template = $template;
-    $this->user = $user;
-    $this->db = $db;
-    $this->request = $request;
-    $this->api = $api;
-  }
-
-  static public function getSubscribedEvents()
-  {
-    return array(
-    //  'core.page_header_after' => 'json_header',
-      'core.page_footer_after' => 'json_template',
-    );
-  }
-
-  private function should_display_json() {
-    return $this->request->variable('scfr_json_callback', false);
-  }
-
-  public function json_header($event) {
-    if($this->should_display_json())  {
-      $headers = $event["http_headers"];
-      $headers["Content-type"] = "application/json";
-      $event["http_headers"] = $headers;
+    /** @var \phpbb\template\template */
+    protected $template;
+    /** @var \phpbb\user */
+    protected $user;
+    /** @param \phpbb\db\driver\driver_interface */
+    protected $db;
+    
+    protected $api;
+    
+    private $parentMap = [];
+    
+    private $pre = false;
+    
+    
+    /**
+    * Constructor
+    *
+    * @param \phpbb\template\template             $template          Template object
+    * @param \phpbb\user   $user             User object
+    * @param \phpbb\db\driver\driver_interface   $db             Database object
+    * @access public
+    */
+    public function __construct(\phpbb\template\template $template, \phpbb\user $user, \phpbb\db\driver\driver_interface $db, \phpbb\request\request $request, \scfr\phpbbJsonTemplate\helper\api $api) {
+        $this->template = $template;
+        $this->user = $user;
+        $this->db = $db;
+        $this->request = $request;
+        $this->api = $api;
     }
-  }
-
-  public function json_template($event) {
-    if($this->should_display_json()) {
-      $this->api->render_json();
+    
+    static public function getSubscribedEvents()
+    {
+        return array(
+        'core.common' => 'json_header',
+        'core.page_footer_after' => 'json_template',
+        'core.make_jumpbox_modify_tpl_ary' => 'jumpbox'
+        );
     }
-  }
+    
+    public function jumpbox($event) {
+        $this->pre = true;
+        $raw = $event['row'];
+        $tpl = $event['tpl_ary'];
+
+        foreach($tpl as &$tp) {
+            if($tp['FORUM_ID'] > 0)
+            $tp['UNREAD'] = $this->check_unread_forum($tp['FORUM_ID']);
+        }
+
+        $event['tpl_ary'] = $tpl;
+
+        $this->parentMap[$raw['parent_id']][] = (integer) $raw['forum_id'];
+        
+    }
+    
+    /**
+     * @todo CACHE THIS LIKE OMG
+     * @param [type] $forum_id
+     * @return void
+     */
+    private function check_unread_forum($forum_id)
+    {
+        global $db, $user;
+        
+        // The next block of code skips the check if the user is a guest (since prosilver and subsilver hide the unread link from guests)
+        // or if the user is a a bot.  If you use a template that shows the link to unread posts for guests, you may want to get rid of the first part of the if
+        // clause so that the text of the link to unread posts will toggle rather than always reading 'View unread posts'.
+        if ($user->data['is_bot'])
+        {
+            return true;
+        }
+        
+        $sql = 'SELECT f.forum_last_post_time, ft.mark_time
+        FROM ' . FORUMS_TABLE . ' f
+        LEFT JOIN ' . FORUMS_TRACK_TABLE . ' ft
+        ON (f.forum_id = ft.forum_id AND ft.user_id = ' . $user->data['user_id'] . ')
+        WHERE f.forum_id = ' . $forum_id;
+        $result = $db->sql_query($sql);
+        $row = $db->sql_fetchrow($result);
+        $db->sql_freeresult($result);
 
 
+        // relevant mark time is the forums watch table mark time for this user or, if there is none, the user last mark time for this user
+        $mark_time = ($row['mark_time']) ? $row['mark_time'] : $user->data['user_lastmark'];
+        
+        // if forum last post time is greater than relevant mark time then the forum has at least one unread post so return true
+        if ($row['forum_last_post_time'] > $mark_time)
+        {
+            return true;
+        }
+        
+        // forum has no unreads, so return false
+        return false;
+    }
+    
+    private function should_display_json() {
+        return $this->request->variable('scfr_json_callback', false);
+    }
+    
+    public function json_header($event) {
+        header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
+        header('Access-Control-Allow-Credentials: true');
+    }
+    
+    public function json_template($event) {
+        
+        if(!$this->pre) \make_jumpbox("");
+        
+        $this->template->assign_var("S_USER_ID", (integer) $this->user->data['user_id']);
+        $this->template->assign_var("jumpbox_map", $this->parentMap);
+        
+        
+        $this->request->disable_super_globals();
+        if($this->should_display_json()) {
+            $this->api->render_json();
+        }
+    }
+    
+    
 }
 ?>

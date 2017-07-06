@@ -14,3 +14,15 @@ services:
     arguments:
       - '@template'
       - '@user'
+  scfr.phpbbJsonTemplate.helper.userinfo:
+    class: scfr\phpbbJsonTemplate\helper\userinfo
+  scfr.phpbbJsonTemplate.helper.mp.convo:
+    class: scfr\phpbbJsonTemplate\helper\mp\convo
+  scfr.phpbbJsonTemplate.helper.mp.user:
+    class: scfr\phpbbJsonTemplate\helper\mp\user
+  scfr.phpbbJsonTemplate.controller.api.mp:
+    class: scfr\phpbbJsonTemplate\controller\api\mp       
+    arguments:
+      - '@controller.helper'
+      - '@user'
+      - '@scfr.phpbbJsonTemplate.helper.api'

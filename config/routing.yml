@@ -1,0 +1,3 @@
+scfr.phpbbJsonTemplate.api.mp.getUserConvos:
+    path: SCFRAPI/PM/Convos
+    defaults: { _controller: scfr.phpbbJsonTemplate.controller.api.mp:handle, mode: "latest_convo" }

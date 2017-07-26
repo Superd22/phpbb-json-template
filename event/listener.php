@@ -39,7 +39,8 @@ class listener implements EventSubscriberInterface
         return array(
         'core.common' => 'json_header',
         'core.page_footer_after' => 'json_template',
-        'core.make_jumpbox_modify_tpl_ary' => 'jumpbox'
+        'core.make_jumpbox_modify_tpl_ary' => 'jumpbox',
+        'core.submit_pm_after' => "submit_pm_after"
         );
     }
     
@@ -104,6 +105,7 @@ class listener implements EventSubscriberInterface
     }
     
     public function json_header($event) {
+
         header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
         header('Access-Control-Allow-Credentials: true');
     }
@@ -120,8 +122,25 @@ class listener implements EventSubscriberInterface
         if($this->should_display_json()) {
             $this->api->render_json();
         }
+        
+        $da = \scfr\phpbbJsonTemplate\helper\mp\convo::populate_db(5000,100000);
     }
     
+    /**
+     * Performs our convo related pm thingy after a pm is submitted
+     *
+     * @param [type] $event
+     * @return void
+     */
+    public function submit_pm_after($event) {
+        global $db;
+        print_r($event['pm_data']);
+        $visibility = array_merge([$event['pm_data']['from_user_id']], array_keys($event['pm_data']['recipients']));
+        echo "<hr />";
+        print_r($event['pm_data']["reply_from_root_level"] == 0);
+        if($event['pm_data']["reply_from_root_level"] == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
+        else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $event['pm_data']["reply_from_root_level"] );
+        
+    }
     
 }
-?>

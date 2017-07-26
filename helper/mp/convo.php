@@ -36,18 +36,54 @@ class convo {
             $m["author"] = new \scfr\phpbbJsonTemplate\helper\userinfo($m["author_id"]);
             if($m['pm_deleted']) $m["message_text"]= "";
             
-            $messages[] = $m;
+            $messages[] = self::type_check_message($m);
         }
         
         $main = $messages[0];
         $this->title  = $main["message_subject"];
-        $this->id  = $main["msg_id"];
+        $this->id  = (integer) $main["msg_id"];
         $this->author = $main["author"];
-        $this->start  = $main["message_time"];
-        $this->last   = $messages[(sizeof($messages) - 1)]["message_time"];
+        $this->start  = (integer) $main["message_time"];
+        $this->last   = (integer) $messages[(sizeof($messages) - 1)]["message_time"];
         
         $this->messages = $messages;
-        return $this;
+    }
+    
+    public static function type_check_message($message) {
+        $integers = [
+        "author_id",
+        "folder_id",
+        "icon_id",
+        "message_attachment",
+        "message_edit_count",
+        "message_edit_time",
+        "message_edit_user",
+        "message_time",
+        "msg_id",
+        "root_level",
+        "user_id"
+        ];
+        
+        $bools = [
+        "enable_bbcode",
+        "enable_magic_url",
+        "enable_sig",
+        "enable_smilies",
+        "message_reported",
+        "pm_deleted",
+        "pm_forwarded",
+        "pm_marked",
+        "pm_new",
+        "pm_replied",
+        "pm_unread"
+        ];
+        
+        foreach($integers as $int)
+        $message[$int] = (integer) $message[$int];
+        foreach($bools as $bool)
+        $message[$bool] = (boolean) $message[$bool];
+        
+        return $message;
     }
     
     
@@ -55,13 +91,14 @@ class convo {
     public static function get_latest_convos($user_id, $start = 0, $limit = 20) {
         global $db;
         
-        $sql = "SELECT root_level FROM testfo_privmsgs_convo WHERE user_id = {$user_id}
+        $sql = "SELECT SQL_CALC_FOUND_ROWS root_level FROM testfo_privmsgs_convo WHERE user_id = {$user_id}
         
         ORDER BY last_time DESC
         LIMIT {$start}, {$limit}
         ";
         
         $result = $db->sql_query($sql);
+        $count = $db->sql_fetchrow($db->sql_query("SELECT FOUND_ROWS() as count"))["count"];
         
         while($c = $db->sql_fetchrow($result)) {
             $root = $c['root_level'] > 0 ? $c['root_level'] : $c['rooty'];
@@ -72,7 +109,8 @@ class convo {
         /** echo "<pre>";
         print_r($results);
         */
-        return $results;
+        $currentPage = floor($start / $limit) <= 1 ? 1 : floor($start / $limit);
+        return ["convos" => $results, "count" => $count, "page" => $currentPage, "pages" => ceil($count / $limit)];
     }
     
     private static function insert_convo($user, $msg_id, $time = 0) {
@@ -105,8 +143,6 @@ class convo {
         msg.msg_id = too.msg_id AND msg.msg_id > 50000
         
         ORDER BY msg.msg_id ASC";
-        
-        echo $sql;
         
         $result = $db->sql_query($sql);
         while($c = $db->sql_fetchrow($result)) {

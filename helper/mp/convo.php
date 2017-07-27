@@ -40,6 +40,10 @@ class convo {
         }
         
         $main = $messages[0];
+                
+        foreach($messages as &$message) 
+            $message["recipients"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["to_address"]);
+        
         $this->title  = $main["message_subject"];
         $this->id  = (integer) $main["msg_id"];
         $this->author = $main["author"];
@@ -106,9 +110,6 @@ class convo {
             $results[] = new convo($user_id, $root);
         }
         
-        /** echo "<pre>";
-        print_r($results);
-        */
         $currentPage = floor($start / $limit) <= 1 ? 1 : floor($start / $limit);
         return ["convos" => $results, "count" => $count, "page" => $currentPage, "pages" => ceil($count / $limit)];
     }
@@ -125,13 +126,9 @@ class convo {
     }
     
     public static function new_convo($users, $msg_id, $time = 0) {
-        
         if(gettype($users) == gettype(123)) $users = array($users);
         if(gettype($users) == gettype([])) foreach($users as $user) self::insert_convo($user, $msg_id, $time);
         else throw new \Exception("Invalid type for users");
-            
-        
-        
     }
     
     public function populate_db($start=0, $limit=10) {
@@ -166,7 +163,7 @@ class convo {
             self::update_convo($user, $root_level, $time);
         }
         else throw new \Exception("Invalid type for users");
-        }
+    }
     
     
     

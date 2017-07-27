@@ -14,12 +14,20 @@ services:
     arguments:
       - '@template'
       - '@user'
+  scfr.phpbbJsonTemplate.services.adresses:
+    class: scfr\phpbbJsonTemplate\services\adresses
   scfr.phpbbJsonTemplate.helper.userinfo:
     class: scfr\phpbbJsonTemplate\helper\userinfo
+  scfr.phpbbJsonTemplate.helper.groupinfo:
+    class: scfr\phpbbJsonTemplate\helper\groupinfo
   scfr.phpbbJsonTemplate.helper.mp.convo:
     class: scfr\phpbbJsonTemplate\helper\mp\convo
   scfr.phpbbJsonTemplate.helper.mp.user:
     class: scfr\phpbbJsonTemplate\helper\mp\user
+  scfr.phpbbJsonTemplate.helper.mp.pm:
+    class: scfr\phpbbJsonTemplate\helper\mp\pm
+  scfr.phpbbJsonTemplate.helper.mp.adress:
+    class: scfr\phpbbJsonTemplate\helper\mp\adress
   scfr.phpbbJsonTemplate.controller.api.mp:
     class: scfr\phpbbJsonTemplate\controller\api\mp       
     arguments:

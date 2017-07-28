@@ -5,6 +5,7 @@ class adress {
     public $id;
     public $type;
     public $color;
+    public $image;
     
     private $string;
     
@@ -52,6 +53,7 @@ class adress {
             $info = new \scfr\phpbbJsonTemplate\helper\userinfo($this->id);
             $this->name = $info->username;
             $this->color = $info->color;
+            $this->image = $info->avatar;
         }
         
         elseif($this->type === "group") {

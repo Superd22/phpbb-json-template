@@ -30,8 +30,8 @@ class adress {
         $string = $this->string;
         
         // Compute type of adress based on prefix
-        if(strpos("u_", $string) === 0) $this->type = "user";
-        elseif(strpos("g_", $string) === 0) $this->type = "group";
+        if(strpos("u_", $string) >= 0) $this->type = "user";
+        elseif(strpos("g_", $string) >= 0) $this->type = "group";
             
         // remove prefix
         $string = substr($string, 2);
@@ -49,15 +49,17 @@ class adress {
         if(!$this->id) throw new \Exception("ID ({$this->id}) for adress is invalid");
         
         if($this->type === "user") {
-            $info = \scfr\phpbbJsonTemplate\helper\userinfo($this->id);
+            $info = new \scfr\phpbbJsonTemplate\helper\userinfo($this->id);
             $this->name = $info->username;
             $this->color = $info->color;
         }
         
-        if($this->type === "group") {
-            $info = \scfr\phpbbJsonTemplate\helper\groupinfo($this->id);
+        elseif($this->type === "group") {
+            $info = new \scfr\phpbbJsonTemplate\helper\groupinfo($this->id);
             $this->name = $info->name;
             $this->color = $info->color;
         }
+
+        else throw new \Exception("unsuported type for FetchTarget in phpbbJsonTemplate\helper\mp\adress");
     }
 }

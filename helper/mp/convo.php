@@ -13,7 +13,35 @@ class convo {
         $this->user_id = (integer) $user_id;
     }
     
+    /**
+     * Hydrates the instance with all the relevant info from the db
+     *
+     * @param integer $start start index for messages
+     * @param integer $limit limit of messages to query starting from $start
+     * @return void
+     */
     public function get_convo_content($start = 0, $limit = 20) {
+        $this->get_convo_participants();
+        $this->get_convo_messages($start, $limit);
+    }
+    
+    /**
+     * Hydrates the instance with all the participants in this conversation
+     *
+     * @return void
+     */
+    private function get_convo_participants() {
+
+    }
+
+    /**
+     * Hydrates the instance with the messages it contains
+     *
+     * @param integer $start start index for messages
+     * @param integer $limit limit of messages to query starting from $start
+     * @return void
+     */
+    private function get_convo_messages($start = 0, $limit = 20) {
         global $db;
         $messages = [];
         
@@ -40,9 +68,9 @@ class convo {
         }
         
         $main = $messages[0];
-                
-        foreach($messages as &$message) 
-            $message["recipients"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["to_address"]);
+        
+        foreach($messages as &$message)
+        $message["recipients"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["to_address"]);
         
         $this->title  = $main["message_subject"];
         $this->id  = (integer) $main["msg_id"];
@@ -53,6 +81,12 @@ class convo {
         $this->messages = $messages;
     }
     
+    /**
+     * Ensures a message object/array is correctly typed for front-end
+     *
+     * @param array $message
+     * @return array correctly typed message
+     */
     public static function type_check_message($message) {
         $integers = [
         "author_id",
@@ -91,7 +125,14 @@ class convo {
     }
     
     
-    
+    /**
+     * Helper function to get the latest convos of a given user
+     * 
+     * @param integer $user_id the forum id of the user to fetch for
+     * @param integer $start the offset of convos
+     * @param integer $limit the number of convo to fetch
+     * @return convo[] an array of relevant conversations
+     */
     public static function get_latest_convos($user_id, $start = 0, $limit = 20) {
         global $db;
         
@@ -114,6 +155,14 @@ class convo {
         return ["convos" => $results, "count" => $count, "page" => $currentPage, "pages" => ceil($count / $limit)];
     }
     
+    /**
+     * Helper method to hydrate the db on new PM
+     *
+     * @param integer $user
+     * @param integer $msg_id
+     * @param integer $time
+     * @return void
+     */
     private static function insert_convo($user, $msg_id, $time = 0) {
         global $db;
         
@@ -125,12 +174,27 @@ class convo {
         $db->sql_query($sql);
     }
     
+    /**
+     * Called when a PM is dispatched to try and create a new convo if one doesn't exist yet.
+     *
+     * @param integer|integer[] $users
+     * @param integer $msg_id
+     * @param integer $time
+     * @return void
+     */
     public static function new_convo($users, $msg_id, $time = 0) {
         if(gettype($users) == gettype(123)) $users = array($users);
         if(gettype($users) == gettype([])) foreach($users as $user) self::insert_convo($user, $msg_id, $time);
         else throw new \Exception("Invalid type for users");
     }
     
+    /**
+     * Helper function to migrate an old db to the convo system
+     *
+     * @param integer $start
+     * @param integer $limit
+     * @return void
+     */
     public function populate_db($start=0, $limit=10) {
         global $db;
         
@@ -154,7 +218,15 @@ class convo {
         }
     }
     
-    
+    /**
+     * Called by event on new PM, will ensure a convo exists for this PM and update it with the latest
+     * timestamp
+     *
+     * @param integer|integer[] $users
+     * @param integer $root_level
+     * @param integer $time
+     * @return void
+     */
     public static function new_pm_in_convo($users, $root_level, $time = 0) {
         if(gettype($users) == gettype(123)) $users = array($users);
         if(gettype($users) == gettype([])) foreach($users as $user) {
@@ -163,10 +235,17 @@ class convo {
             self::update_convo($user, $root_level, $time);
         }
         else throw new \Exception("Invalid type for users");
-    }
+        }
     
     
-    
+    /**
+     * Helper method to hydrate the db on new pm in an existing convo
+     *
+     * @param integer $user
+     * @param integer $root_level
+     * @param integer $time
+     * @return void
+     */
     private static function update_convo($user, $root_level, $time=0) {
         global $db;
         $time = $time == 0 ? time() : $time;

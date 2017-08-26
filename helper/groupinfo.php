@@ -14,7 +14,7 @@ class groupinfo {
     private function hydrate_user() {
         global $db;
 
-        $sql = "SELECT group_name, group_colour FROM " . GROUPS_TABLE . " WHERE user_id='{$this->id}' ";
+        $sql = "SELECT group_name, group_colour FROM " . GROUPS_TABLE . " WHERE group_id='{$this->id}' ";
         $results = $db->sql_query($sql);
 
         $r = $db->sql_fetchrow($results);

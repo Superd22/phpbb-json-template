@@ -17,6 +17,7 @@ class mp {
     
 
     public function handle($mode) {
+        $mode = request_var("mode", "latest_convo");
         $this->switch_mode($mode);
         return $this->api->render_message($this->payload);
     }
@@ -26,7 +27,16 @@ class mp {
             case "latest_convo":
                 $this->latest_convo();
             break;
+            case "convo_of_mp":
+                $this->convo_of_mp();
+            break;
         }
+    }
+
+    private function convo_of_mp() {
+        $pmId = request_var("pmId", 0);
+        if($pmId > 0)
+        $this->payload = \scfr\phpbbJsonTemplate\helper\mp\pm::get_convo_of_pm_by_id($pmId);
     }
 
     private function latest_convo() {

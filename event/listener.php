@@ -134,10 +134,7 @@ class listener implements EventSubscriberInterface
      */
     public function submit_pm_after($event) {
         global $db;
-        print_r($event['pm_data']);
         $visibility = array_merge([$event['pm_data']['from_user_id']], array_keys($event['pm_data']['recipients']));
-        echo "<hr />";
-        print_r($event['pm_data']["reply_from_root_level"] == 0);
 
         if($event['pm_data']["reply_from_root_level"] == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
         else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $event['pm_data']["reply_from_root_level"] );

@@ -27,14 +27,16 @@ class adresses {
         
         // truish is okay coz can't be at pos0
         if(strpos($string,":") > 0)
-        $adresses = explode($string, ":");
+        $adresses = explode(":", $string);
         else $adresses = [$string];
+
             
         foreach($adresses as $adr) {
-            $ret[] = $this->getAdressFor($string);
+            $ret[] = $this->getAdressFor($adr);
         }
-        
         return $ret;
+
+
     }
     
     

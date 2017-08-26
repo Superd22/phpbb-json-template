@@ -31,9 +31,10 @@ class adress {
         $string = $this->string;
         
         // Compute type of adress based on prefix
-        if(strpos("u_", $string) >= 0) $this->type = "user";
-        elseif(strpos("g_", $string) >= 0) $this->type = "group";
-            
+        if(strpos($string, "u_") !== false) $this->type = "user";
+        else if(strpos($string, "g_") !== false) $this->type = "group";
+        else throw new \Exception("Unsuported adress type");
+
         // remove prefix
         $string = substr($string, 2);
         

@@ -59,7 +59,7 @@ class convo {
     * @return void
     */
     private function get_convo_messages($start = 0, $limit = 20) {
-        global $db;
+        global $db, $user;
         $messages = [];
         
         $from = " FROM " . PRIVMSGS_TABLE . " as msg, " . PRIVMSGS_TO_TABLE . " as too";
@@ -71,7 +71,7 @@ class convo {
         $sql_second_pass = "SELECT msg_id FROM " . PRIVMSGS_TO_TABLE . " WHERE msg_id IN ({$sql_first_pass})
         AND (author_id = {$this->user_id} OR  user_id = {$this->user_id}) GROUP BY msg_id";
         
-        $sql_third_pass = "SELECT * {$from} WHERE msg.msg_id = too.msg_id AND msg.msg_id IN ({$sql_second_pass}) GROUP BY msg.msg_id";
+        $sql_third_pass = "SELECT * {$from} WHERE msg.msg_id = too.msg_id AND msg.msg_id IN ({$sql_second_pass}) GROUP BY msg.msg_id ORDER BY msg.msg_id DESC";
         
         $db->sql_query("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
         $result = $db->sql_query($sql_third_pass);
@@ -90,6 +90,8 @@ class convo {
             $message["recipients"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["to_address"]);
             /** @todo check if the user can see (=is in) this bcc */
             //$message["bcc"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["bcc_address"]);
+
+            $message["sent_at"] = $user->format_date($message['message_time']);
         }
         
         $this->title  = $main["message_subject"];

@@ -28,13 +28,13 @@ class api extends json_response {
     }
     
     public function get_template_filename() {
-        return $this->template->get_user_style()[0] . "/template/" . $this->access_protected($this->template, "filenames")["body"];
+        return \str_replace(".html", "",$this->access_protected($this->template, "filenames")["body"]);
     }
     
     public function render_json($status_code = 200) {
         header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
         header('Access-Control-Allow-Credentials: true');
-        $json = array('@template' => $this->get_template_vars());
+        $json = array('@template' => $this->get_template_vars(), '@tplName' => $this->get_template_filename());
         $this->send($json);
     }
     

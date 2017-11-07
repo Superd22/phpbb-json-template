@@ -56,7 +56,7 @@ class listener implements EventSubscriberInterface
             if($tp['FORUM_ID'] > 0) {
                 $tp['PARENT_ID'] = (integer) $raw['parent_id'];
                 $this->forumIdMap[$tp['FORUM_ID']] = $tp;
-                $tp['UNREAD'] = $this->check_unread_forum($tp['FORUM_ID']);
+                $this->check_unread_forum($tp['FORUM_ID']);
             }
 
         }
@@ -64,7 +64,6 @@ class listener implements EventSubscriberInterface
         $event['tpl_ary'] = $tpl;
 
         $this->parentMap[$raw['parent_id']][] = (integer) $raw['forum_id'];
-        
     }
     
     /**
@@ -100,6 +99,7 @@ class listener implements EventSubscriberInterface
         // if forum last post time is greater than relevant mark time then the forum has at least one unread post so return true
         if ($row['forum_last_post_time'] > $mark_time)
         {
+            $this->bubble_forum_unread($forum_id);
             return true;
         }
         
@@ -114,10 +114,11 @@ class listener implements EventSubscriberInterface
      * @param [type] $forum_id
      */
     private function bubble_forum_unread($forum_id) {
-        if(!$forum_id || !$this->forumIdMap[$forum_id]) return;
+        if(!$forum_id || !isset($this->forumIdMap[$forum_id])) return;
         $this->forumIdMap[$forum_id]['UNREAD'] = true;
 
-        if($this->forumIdMap[$forum_id]['PARENT_ID']) $this->bubble_forum_unread($this->forumIdMap[$forum_id]['PARENT_ID']);
+        if($this->forumIdMap[$forum_id]['PARENT_ID']) {
+            $this->bubble_forum_unread($this->forumIdMap[$forum_id]['PARENT_ID']);}
     }
 
     private function should_display_json() {
@@ -136,7 +137,7 @@ class listener implements EventSubscriberInterface
         
         $this->template->assign_var("S_USER_ID", (integer) $this->user->data['user_id']);
         $this->template->assign_var("jumpbox_map", $this->parentMap);
-        
+        $this->template->assign_var("jumpbox_full", array_values($this->forumIdMap));
         
         $this->request->disable_super_globals();
         if($this->should_display_json()) {

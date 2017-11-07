@@ -14,6 +14,7 @@ class listener implements EventSubscriberInterface
     protected $api;
     
     private $parentMap = [];
+    private $forumIdMap = [];
     
     private $pre = false;
     
@@ -40,7 +41,7 @@ class listener implements EventSubscriberInterface
         'core.common' => 'json_header',
         'core.page_footer_after' => 'json_template',
         'core.make_jumpbox_modify_tpl_ary' => 'jumpbox',
-        'core.submit_pm_after' => "submit_pm_after"
+        'core.submit_pm_after' => "submit_pm_after",
         );
     }
     
@@ -49,9 +50,15 @@ class listener implements EventSubscriberInterface
         $raw = $event['row'];
         $tpl = $event['tpl_ary'];
 
+        $idMap = [];
+
         foreach($tpl as &$tp) {
-            if($tp['FORUM_ID'] > 0)
-            $tp['UNREAD'] = $this->check_unread_forum($tp['FORUM_ID']);
+            if($tp['FORUM_ID'] > 0) {
+                $tp['PARENT_ID'] = (integer) $raw['parent_id'];
+                $this->forumIdMap[$tp['FORUM_ID']] = $tp;
+                $tp['UNREAD'] = $this->check_unread_forum($tp['FORUM_ID']);
+            }
+
         }
 
         $event['tpl_ary'] = $tpl;
@@ -100,6 +107,19 @@ class listener implements EventSubscriberInterface
         return false;
     }
     
+
+    /**
+     * Sets a forum as unread and bubble that state to its parent
+     *
+     * @param [type] $forum_id
+     */
+    private function bubble_forum_unread($forum_id) {
+        if(!$forum_id || !$this->forumIdMap[$forum_id]) return;
+        $this->forumIdMap[$forum_id]['UNREAD'] = true;
+
+        if($this->forumIdMap[$forum_id]['PARENT_ID']) $this->bubble_forum_unread($this->forumIdMap[$forum_id]['PARENT_ID']);
+    }
+
     private function should_display_json() {
         return $this->request->variable('scfr_json_callback', false);
     }
@@ -136,8 +156,11 @@ class listener implements EventSubscriberInterface
         global $db;
         $visibility = array_merge([$event['pm_data']['from_user_id']], array_keys($event['pm_data']['recipients']));
 
-        if($event['pm_data']["reply_from_root_level"] == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
-        else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $event['pm_data']["reply_from_root_level"] );
+        $reply_from = (integer)($event['pm_data']["reply_from_root_level"]) > 0 ? (integer)($event['pm_data']["reply_from_root_level"]) : (integer) $event['pm_data']["reply_from_msg_id"];
+
+
+        if($reply_from == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
+        else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $reply_from );
         
     }
     

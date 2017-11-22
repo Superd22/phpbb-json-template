@@ -218,7 +218,7 @@ class convo {
     * @param integer $limit
     * @return void
     */
-    public static function populate_db($start=0, $limit=50000) {
+    public static function populate_db($start=0, $limit=10000) {
         global $db;
         
         echo "start populating";
@@ -226,12 +226,17 @@ class convo {
         $sql = "SELECT too.*, msg.*, c.id as existed FROM testfo_privmsgs_to as too, testfo_privmsgs as msg
         LEFT JOIN testfo_privmsgs_convo as c ON c.root_level = IF(msg.root_level = 0, msg.msg_id, msg.root_level)
         WHERE
-        msg.msg_id = too.msg_id AND msg.msg_id > ".$start."
+        msg.msg_id = too.msg_id AND msg.msg_id >= {$start}
         
-        ORDER BY msg.msg_id ASC LIMIT ".$limit."";
-        
+        ORDER BY msg.msg_id ASC LIMIT {$limit}";
+
+        echo "\n {$sql}";   
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
         $result = $db->sql_query($sql);
+        echo "result";
         while($c = $db->sql_fetchrow($result)) {
+            var_dump($c);
             $root = $c['root_level'] > 0 ? $c['root_level'] : $c['msg_id'];
             $users = [$c['user_id'], $c['author_id']];
             

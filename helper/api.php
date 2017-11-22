@@ -27,20 +27,34 @@ class api extends json_response {
         return $return;
     }
     
+    public static function doHaeaders() {
+        error_reporting(0);
+        global $request;
+        $request->enable_super_globals();
+        
+        $http_origin = $_SERVER['HTTP_REFERER'];
+        header('X-Origami: '.$http_origin);
+
+        if(preg_match('/^(https:\/\/([^.]*\.)?starcitizen\.fr)/', $http_origin, $matchs) !== false) {
+            header('Access-Control-Allow-Origin: '.$matchs[1]);
+        }
+        else header('Access-Control-Allow-Origin:  https://starcitizen.fr');
+             
+        header('Access-Control-Allow-Credentials: true');
+    }
+
     public function get_template_filename() {
         return \str_replace(".html", "",$this->access_protected($this->template, "filenames")["body"]);
     }
     
     public function render_json($status_code = 200) {
-        header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
-        header('Access-Control-Allow-Credentials: true');
+        $this->doHaeaders();
         $json = array('@template' => $this->get_template_vars(), '@tplName' => $this->get_template_filename());
         $this->send($json);
     }
     
     public function render_message($message) {
-        header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
-        header('Access-Control-Allow-Credentials: true');
+        $this->doHaeaders();
         $this->send($message);
     }
     

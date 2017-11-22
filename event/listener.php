@@ -14,6 +14,8 @@ class listener implements EventSubscriberInterface
     protected $api;
     
     private $parentMap = [];
+    private $forumIdMap = [];
+    
     
     private $pre = false;
     
@@ -49,15 +51,20 @@ class listener implements EventSubscriberInterface
         $raw = $event['row'];
         $tpl = $event['tpl_ary'];
 
+        $idMap = [];
+
         foreach($tpl as &$tp) {
-            if($tp['FORUM_ID'] > 0)
-            $tp['UNREAD'] = $this->check_unread_forum($tp['FORUM_ID']);
+            if($tp['FORUM_ID'] > 0) {
+                $tp['PARENT_ID'] = (integer) $raw['parent_id'];
+                $this->forumIdMap[$tp['FORUM_ID']] = $tp;
+                $this->check_unread_forum($tp['FORUM_ID']);
+            }
+
         }
 
         $event['tpl_ary'] = $tpl;
 
         $this->parentMap[$raw['parent_id']][] = (integer) $raw['forum_id'];
-        
     }
     
     /**
@@ -93,6 +100,7 @@ class listener implements EventSubscriberInterface
         // if forum last post time is greater than relevant mark time then the forum has at least one unread post so return true
         if ($row['forum_last_post_time'] > $mark_time)
         {
+            $this->bubble_forum_unread($forum_id);
             return true;
         }
         
@@ -100,28 +108,40 @@ class listener implements EventSubscriberInterface
         return false;
     }
     
+
+    /**
+     * Sets a forum as unread and bubble that state to its parent
+     *
+     * @param [type] $forum_id
+     */
+    private function bubble_forum_unread($forum_id) {
+        if(!$forum_id || !isset($this->forumIdMap[$forum_id])) return;
+        $this->forumIdMap[$forum_id]['UNREAD'] = true;
+
+        if($this->forumIdMap[$forum_id]['PARENT_ID']) {
+            $this->bubble_forum_unread($this->forumIdMap[$forum_id]['PARENT_ID']);}
+    }
+
     private function should_display_json() {
         return $this->request->variable('scfr_json_callback', false);
     }
     
     public function json_header($event) {
-
-        header('Access-Control-Allow-Origin: http://www.newforum.fr:4200');
-        header('Access-Control-Allow-Credentials: true');
+        \scfr\phpbbJsonTemplate\helper\api::doHaeaders();
     }
     
     public function json_template($event) {
-        
         if(!$this->pre) \make_jumpbox("");
         
         $this->template->assign_var("S_USER_ID", (integer) $this->user->data['user_id']);
         $this->template->assign_var("jumpbox_map", $this->parentMap);
-        
+        $this->template->assign_var("jumpbox_full", array_values($this->forumIdMap));
         
         $this->request->disable_super_globals();
         if($this->should_display_json()) {
             $this->api->render_json();
         }
+        
         
         //$da = \scfr\phpbbJsonTemplate\helper\mp\convo::populate_db(0,100000);
     }
@@ -136,8 +156,11 @@ class listener implements EventSubscriberInterface
         global $db;
         $visibility = array_merge([$event['pm_data']['from_user_id']], array_keys($event['pm_data']['recipients']));
 
-        if($event['pm_data']["reply_from_root_level"] == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
-        else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $event['pm_data']["reply_from_root_level"] );
+        $reply_from = (integer)($event['pm_data']["reply_from_root_level"]) > 0 ? (integer)($event['pm_data']["reply_from_root_level"]) : (integer) $event['pm_data']["reply_from_msg_id"];
+
+
+        if($reply_from == 0)  \scfr\phpbbJsonTemplate\helper\mp\convo::new_convo($visibility, $event['pm_data']["msg_id"] );
+        else \scfr\phpbbJsonTemplate\helper\mp\convo::new_pm_in_convo($visibility, $reply_from );
         
     }
     

@@ -14,9 +14,7 @@ class listener implements EventSubscriberInterface
     protected $api;
     
     private $parentMap = [];
-    private $forumIdMap = [];
-    
-    
+    private $forumIdMap = [];    
     private $pre = false;
     
     
@@ -42,7 +40,7 @@ class listener implements EventSubscriberInterface
         'core.common' => 'json_header',
         'core.page_footer_after' => 'json_template',
         'core.make_jumpbox_modify_tpl_ary' => 'jumpbox',
-        'core.submit_pm_after' => "submit_pm_after"
+        'core.submit_pm_after' => "submit_pm_after",
         );
     }
     

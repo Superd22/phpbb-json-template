@@ -90,7 +90,7 @@ class convo {
             $message["recipients"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["to_address"]);
             /** @todo check if the user can see (=is in) this bcc */
             //$message["bcc"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["bcc_address"]);
-
+            
             $message["sent_at"] = $user->format_date($message['message_time']);
         }
         
@@ -209,7 +209,7 @@ class convo {
         if(gettype($users) == gettype(123)) $users = array($users);
         if(gettype($users) == gettype([])) foreach($users as $user) self::insert_convo($user, $msg_id, $time);
         else throw new \Exception("Invalid type for users");
-    }
+        }
     
     /**
     * Helper function to migrate an old db to the convo system
@@ -218,26 +218,28 @@ class convo {
     * @param integer $limit
     * @return void
     */
-    public function populate_db($start=0, $limit=10) {
+    public static function populate_db($start=0, $limit=50000) {
         global $db;
+        
+        echo "start populating";
         
         $sql = "SELECT too.*, msg.*, c.id as existed FROM testfo_privmsgs_to as too, testfo_privmsgs as msg
         LEFT JOIN testfo_privmsgs_convo as c ON c.root_level = IF(msg.root_level = 0, msg.msg_id, msg.root_level)
         WHERE
-        msg.msg_id = too.msg_id AND msg.msg_id > 50000
+        msg.msg_id = too.msg_id AND msg.msg_id > ".$start."
         
-        ORDER BY msg.msg_id ASC";
+        ORDER BY msg.msg_id ASC LIMIT ".$limit."";
         
         $result = $db->sql_query($sql);
         while($c = $db->sql_fetchrow($result)) {
             $root = $c['root_level'] > 0 ? $c['root_level'] : $c['msg_id'];
             $users = [$c['user_id'], $c['author_id']];
-            echo $c['message_time'];
             
-            print_r($c['msg_id']);
+            echo $c['msg_id'].":".$c['message_time'];
+            
             if($c['existed']) self::new_pm_in_convo($users, $root, $c['message_time']);
             else self::new_convo($users, $root, $c['message_time']);
-                echo "<hr/>";
+                echo "\n";
         }
     }
     

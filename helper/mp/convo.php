@@ -92,6 +92,8 @@ class convo {
             //$message["bcc"] = \scfr\phpbbJsonTemplate\services\adresses::get()->getAdressesFor($message["bcc_address"]);
             
             $message["sent_at"] = $user->format_date($message['message_time']);
+            $parse_flags = ($message['bbcode_bitfield'] ? OPTION_FLAG_BBCODE : 0) | OPTION_FLAG_SMILIES;
+            $message["message_text"] = generate_text_for_display($message['message_text'], $message['bbcode_uid'], $message['bbcode_bitfield'], $parse_flags, true);
         }
         
         $this->title  = $main["message_subject"];
@@ -226,9 +228,9 @@ class convo {
         $sql = "SELECT too.*, msg.*, c.id as existed FROM testfo_privmsgs_to as too, testfo_privmsgs as msg
         LEFT JOIN testfo_privmsgs_convo as c ON c.root_level = IF(msg.root_level = 0, msg.msg_id, msg.root_level)
         WHERE
-        msg.msg_id = too.msg_id AND msg.msg_id >= {$start}
+        msg.msg_id = too.msg_id AND msg.msg_id >= {$start} AND msg.msg_id <= {$limit}
         
-        ORDER BY msg.msg_id ASC LIMIT {$limit}";
+        ORDER BY msg.msg_id ASC";
 
         echo "\n {$sql}";   
         error_reporting(E_ALL);

@@ -49,7 +49,7 @@ class api extends json_response {
     
     public function render_json($status_code = 200) {
         $this->doHaeaders();
-        $json = array('@template' => $this->get_template_vars(), '@tplName' => $this->get_template_filename());
+        $json = array('@template' => array_merge(["TWITCH_BANNER" => ""], $this->get_template_vars()), '@tplName' => $this->get_template_filename());
         $this->send($json);
     }
     
